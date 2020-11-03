@@ -1,0 +1,94 @@
+version: "3.7"
+
+services:
+
+  rabbitmq:
+    image: "bitnami/rabbitmq:3.8"
+    ports:
+      - "4369:4369"
+      - "5672:5672"
+      - "15672:15672"
+      - "25672:25672"
+    volumes:
+      - "rabbitmq_data:/bitnami"
+
+  redis:
+    image: "bitnami/redis:5.0"
+    environment:
+      - REDIS_PASSWORD=redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - "redis_data:/bitnami/redis/data"
+
+  celery_flower:
+    image: gregsi/latest-celery-flower-docker:flower-0.9.4
+    environment:
+      - AMQP_USERNAME=user
+      - AMQP_PASSWORD=bitnami
+      - AMQP_ADMIN_USERNAME=user
+      - AMQP_ADMIN_PASSWORD=bitnami
+      - AMQP_HOST=rabbitmq
+      - AMQP_PORT=5672
+      - AMQP_ADMIN_HOST=rabbitmq
+      - AMQP_ADMIN_PORT=15672
+      - FLOWER_BASIC_AUTH=user:test
+    ports:
+      - "5555:5555"
+    depends_on:
+      - rabbitmq
+      - redis
+
+  database:
+    image: "postgres"
+    env_file:
+      - database.env
+    ports:
+      - "5432:5432"
+    volumes:
+#     - database-data:/var/lib/postgresql/data/
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  pgadmin:
+    image: dpage/pgadmin4
+    ports:
+      - "5050:5050"
+    depends_on:
+      - database
+    env_file:
+      - database.env
+
+  fastapi:
+    build: .
+    env_file:
+      - s3.env
+      - database.env
+    ports:
+      - "5057:5057"
+    volumes:
+      - './app:/app/'
+    depends_on:
+      - database
+#      - rabbitmq
+#      - redis
+
+  worker:
+    build:
+      context: .
+      dockerfile: Worker.Dockerfile
+    env_file: 
+      - s3.env
+      - database.env
+    volumes:
+      - './app:/app/'
+    depends_on:
+      - database
+      - rabbitmq
+      - redis
+
+volumes:
+  rabbitmq_data:
+    driver: local
+  redis_data:
+    driver: local
+  database-data:
