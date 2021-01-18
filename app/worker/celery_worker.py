@@ -12,8 +12,8 @@ from .celery_app import celery_app
 
 
 S3_BUCKET="will-public"
-S3_ACCESS_KEY="AKIAJCYC6XTYNO6SJNPA"
-S3_SECRET_ACCESS_KEY="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"
+S3_ACCESS_KEY="abcd"
+S3_SECRET_ACCESS_KEY="efgh"
 
 UPLOAD_FOLDER = "/app/uploads"
 
